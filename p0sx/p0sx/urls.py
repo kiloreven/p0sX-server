@@ -37,7 +37,7 @@ from pos.views.stock import (CategoryViewSet,
                              OrderLineViewSet,
                              OrderViewSet,
                              PurchaseViewSet)
-from pos.views.sumup import sumup_ordercallback, sumup_creditcallback
+from pos.views.sumup import sumup_ordercallback, sumup_creditcallback, sumup_oauth_init, sumup_oauth_callback
 from pos.views.user import UserViewSet
 
 
@@ -60,6 +60,8 @@ littleadmin_url = [
     path('verify_add_credit/<int:tid>', verify_add_credit, name='verify_add_credit'),
     url(r'add_credit_stats', add_credit_stats, name='add_credit_stats'),
     path('update_ge_user/', update_ge_user, name='update_ge_user'),
+    path('sumup/oauth/init/', sumup_oauth_init, name='sumup-oauth-init'),
+    path('sumup-return/', sumup_oauth_callback, name='sumup-oauth-callback'),
 ]
 
 sso_url = [

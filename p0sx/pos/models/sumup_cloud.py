@@ -1,9 +1,15 @@
+import random
+import string
 from django.contrib.auth.models import User as DjangoUser
 from django.db import models
 
 from pos.service.sumup import delete_sumup_reader
 from pos.models.stock import PAYMENT_STATE, PaymentState
 from pos.models.user import User
+
+def _get_nonce():
+   letters = string.ascii_lowercase
+   return ''.join(random.choice(letters) for i in range(64))
 
 class SumupReader(models.Model):
     name = models.CharField(max_length=255)
@@ -32,3 +38,9 @@ class SumupTransaction(models.Model):
 
     def __str__(self):
         return f"SumUp transaction to add {self.amount} to {self.user} by {self.authenticated_user}"
+
+
+class SumupAuthorization(models.Model):
+    nonce = models.CharField(max_length=128, default=_get_nonce, editable=False)
+    refresh_token = models.TextField(null=True)
+    expiry = models.DateTimeField(null=True)

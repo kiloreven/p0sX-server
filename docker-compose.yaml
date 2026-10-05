@@ -9,19 +9,33 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=p0sx.settings.env
     image: p0sx-server
-    command: devserver
+    command: prod
     volumes:
-      - ".:/code"
-      - "./media:/media"
+      - "./media:/code/media"
       - "./logs:/logs"
       - "pip-cache:/tmp/pip"
       - "ipython-data-local:/root/.ipython/profile_default"   # persist ipython data, including ipython history
       - "/etc/localtime:/etc/localtime:ro"
     env_file:
-      - .env
+      - ".env"
     ports:
-      - "8000:8000"
-    restart: always
+      - "127.0.0.1:8004:8081"
+    restart: "always"
+
+  db:
+    image: "postgres:11"
+    restart: "always"
+    # set shared memory limit when using docker compose
+    shm_size: "128mb"
+    # or set shared memory limit when deploy via swarm stack
+    #volumes:
+    #  - type: tmpfs
+    #    target: /dev/shm
+    #    tmpfs:
+    #      size: 134217728 # 128*2^20 bytes = 128Mb
+    env_file: ".env"
+    volumes:
+      - "database:/var/lib/postgresql/data"
 
       # server-ext:
       #   build:
@@ -45,4 +59,6 @@ volumes:
   pip-cache:
     driver: local
   ipython-data-local:
+    driver: local
+  database:
     driver: local

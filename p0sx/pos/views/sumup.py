@@ -1,17 +1,27 @@
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.db import transaction as django_transaction, IntegrityError
+from django.http import HttpResponse
+from django.shortcuts import redirect, get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+
+from urllib.parse import urlencode
 
 from django_q.tasks import async_task
 
 from ..models.stock import Order, PaymentState, OrderState
-from ..models.sumup_cloud import SumupTransaction
+from ..models.sumup_cloud import SumupTransaction, SumupAuthorization
 from ..service.sumup import get_sumup_transaction
 
 import json
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+SUMUP_SCOPES = []
+SUMUP_AUTHZ_URL = "https://api.sumup.com/authorize"
+
 
 @csrf_exempt
 def sumup_ordercallback(request, order_id):
@@ -79,3 +89,38 @@ def sumup_creditcallback(request, transaction_id):
     except:
         logger.error(f"pk: {transaction_id} client_transaction_id: '{client_transaction_id}' failed to get transaction")
         return HttpResponse(status=500)
+
+
+def _get_redirect_url(request):
+    # TODO: Base this on url path name instead
+    return request.build_absolute_uri("/littleadmin/sumup-return/")
+
+
+def _get_authz_url(request, nonce):
+    params = {
+        "response_type": "code",
+        "client_id": settings.SUMUP_CLIENT_ID,
+        "redirect": _get_redirect_url(request),
+        "scopes": " ".join(SUMUP_SCOPES),
+        "state": nonce
+    }
+    return f"{SUMUP_AUTHZ_URL}?{urlencode(params)}"
+
+
+@login_required
+def sumup_oauth_init(request):
+    auth_obj = SumupAuthorization()
+    sumup_authz_url = _get_authz_url(request, auth_obj.nonce)
+    return redirect(sumup_authz_url)
+
+
+@csrf_exempt
+def sumup_oauth_callback(request):
+    code = request.GET.get("code")
+    state = request.GET.get("state")
+    auth_obj = get_object_or_404(SumupAuthorization, refresh_token=None, nonce=state)
+    refresh_token, expiry = get_sumup_refresh_token(code, request.build_full_uri())
+    auth_obj.refresh_token = refresh_token
+    auth_obj.expiry = expiry
+    auth_obj.save()
+    return HttpResponse("ok")

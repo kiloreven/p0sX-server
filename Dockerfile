@@ -8,6 +8,9 @@ RUN pip install -r /requirements/base.txt
 RUN pip install -r /requirements/production.txt
 
 COPY . /code
+WORKDIR /code/p0sx
+
+RUN SECRET_KEY=gweuipghsudighulasdghsdfgjsdakhfkluhsfgsd ./manage.py collectstatic --noinput
 
 EXPOSE 8080 8081
 

@@ -8,3 +8,4 @@ https://github.com/kradalby/pyGE/archive/master/0.0.5.zip
 django-environ
 django-q
 escpos
+whitenoise
